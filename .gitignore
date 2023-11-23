@@ -1,0 +1,9 @@
+lab1/client/target/
+lab1/standalone/target/
+lab1/webapp/target/
+
+*.mvn
+*.idea
+*.iws
+*.iml
+*.ipr
