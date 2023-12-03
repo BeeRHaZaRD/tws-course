@@ -1,5 +1,8 @@
 package ru.ifmo.webservices;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +33,10 @@ public class MovieDAO {
         return new ArrayList<>();
     }
 
-    public List<Movie> getMoviesByParams(Map<String, Object> paramsMap) {
+    public List<Movie> getMoviesByParams(Movie movieRequest) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> paramsMap = objectMapper.convertValue(movieRequest, new TypeReference<>() {});
+
         String preparedQuery = createPreparedQuery(this.TABLE_NAME, paramsMap);
         try {
             PreparedStatement stmt = connection.prepareStatement(preparedQuery);
