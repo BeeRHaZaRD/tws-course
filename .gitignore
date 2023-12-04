@@ -1,7 +1,7 @@
-lab1/client/target/
-lab1/standalone/target/
-lab1/webapp/target/
-lab1/client/src/main/java/ru/ifmo/webservices/generated
+**/client/target/
+**/standalone/target/
+**/webapp/target/
+**/ru/ifmo/webservices/generated
 lab1/client/**/ConcurrentMain.java
 
 *.mvn
