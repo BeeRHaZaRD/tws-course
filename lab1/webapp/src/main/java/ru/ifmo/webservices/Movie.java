@@ -1,12 +1,27 @@
 package ru.ifmo.webservices;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlType;
+
+@XmlRootElement(name = "movie")
+@XmlType(name = "movie", propOrder = {
+        "name",
+        "releaseDate",
+        "country",
+        "duration"
+})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Movie {
     private String name;
-    private int releaseDate;
+    @JsonProperty("release_date")
+    private Integer releaseDate;
     private String country;
-    private int duration;
+    private Integer duration;
 
     public Movie() {}
+
     public Movie(String name, int releaseDate, String country, int duration) {
         this.name = name;
         this.releaseDate = releaseDate;
@@ -22,11 +37,11 @@ public class Movie {
         this.name = name;
     }
 
-    public int getReleaseDate() {
+    public Integer getReleaseDate() {
         return releaseDate;
     }
 
-    public void setReleaseDate(int releaseDate) {
+    public void setReleaseDate(Integer releaseDate) {
         this.releaseDate = releaseDate;
     }
 
@@ -38,21 +53,21 @@ public class Movie {
         this.country = country;
     }
 
-    public int getDuration() {
+    public Integer getDuration() {
         return duration;
     }
 
-    public void setDuration(int duration) {
+    public void setDuration(Integer duration) {
         this.duration = duration;
     }
 
     @Override
     public String toString() {
         return "Movie{" +
-            "name='" + name + '\'' +
-            ", releaseDate=" + releaseDate +
-            ", country='" + country + '\'' +
-            ", duration=" + duration +
-            '}';
+                "name='" + name + '\'' +
+                ", releaseDate=" + releaseDate +
+                ", country='" + country + '\'' +
+                ", duration=" + duration +
+                '}';
     }
 }

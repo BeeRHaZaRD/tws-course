@@ -1,22 +1,19 @@
 package ru.ifmo.webservices;
 
-import jakarta.jws.WebMethod;
 import jakarta.jws.WebService;
-
 import java.util.List;
-import java.util.Map;
 
-@WebService(serviceName = "MovieService")
-public class MovieWebService {
-    @WebMethod(operationName = "getAllMovies")
+@WebService(serviceName = "MovieWebService",
+        endpointInterface = "ru.ifmo.webservices.MovieService",
+        targetNamespace = "http://webservices.ifmo.ru")
+public class MovieWebService implements MovieService {
     public List<Movie> getAllMovies() {
         MovieDAO movieDAO = new MovieDAO();
         return movieDAO.getAllMovies();
     }
 
-    @WebMethod(operationName = "getMoviesByParams")
-    public List<Movie> getMoviesByParams(Map<String, Object> paramsMap) {
+    public List<Movie> getMoviesByParams(Movie movieRequest) {
         MovieDAO movieDAO = new MovieDAO();
-        return movieDAO.getMoviesByParams(paramsMap);
+        return movieDAO.getMoviesByParams(movieRequest);
     }
 }
