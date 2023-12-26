@@ -1,7 +1,6 @@
 package ru.ifmo.webservices.restservice;
 
 import jakarta.persistence.*;
-
 import java.util.Objects;
 
 @Entity
