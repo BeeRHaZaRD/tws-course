@@ -1,8 +1,10 @@
 **/client/target/
 **/standalone/target/
 **/webapp/target/
+**/juddi-client/target/
 **/ru/ifmo/webservices/generated
 lab1/client/**/ConcurrentMain.java
+lab7/juddi-distro-*
 
 *.mvn
 *.idea
