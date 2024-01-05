@@ -1,5 +1,6 @@
 package ru.ifmo.webservices.service;
 
+import jakarta.jws.HandlerChain;
 import jakarta.jws.WebService;
 import ru.ifmo.webservices.dao.MovieDAO;
 import ru.ifmo.webservices.exceptions.OperationException;
@@ -13,6 +14,7 @@ import java.util.List;
 @WebService(serviceName = "MovieWebService",
         endpointInterface = "ru.ifmo.webservices.service.MovieService",
         targetNamespace = "http://webservices.ifmo.ru")
+@HandlerChain(file = "handler-chain.xml")
 public class MovieWebService implements MovieService {
     private final MovieDAO movieDAO;
 
