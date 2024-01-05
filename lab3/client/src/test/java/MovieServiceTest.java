@@ -1,10 +1,13 @@
+import jakarta.xml.ws.BindingProvider;
 import org.junit.jupiter.api.*;
 import ru.ifmo.webservices.generated.Movie;
 import ru.ifmo.webservices.generated.MovieService;
 import ru.ifmo.webservices.generated.MovieWebService;
 import ru.ifmo.webservices.generated.OperationException;
 
+import java.net.Authenticator;
 import java.net.MalformedURLException;
+import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
@@ -16,6 +19,13 @@ public class MovieServiceTest {
 
     @BeforeAll
     public void setup() throws MalformedURLException {
+        Authenticator.setDefault(new Authenticator() {
+             @Override
+             protected PasswordAuthentication getPasswordAuthentication() {
+                 return new PasswordAuthentication("admin", "admin".toCharArray());
+             }
+         });
+
         URL url = new URL("http://localhost:8080/MovieService?wsdl");
         MovieWebService movieWebService = new MovieWebService(url);
         this.movieService = movieWebService.getMovieWebServicePort();

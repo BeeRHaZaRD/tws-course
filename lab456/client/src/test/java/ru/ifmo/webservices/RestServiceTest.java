@@ -11,12 +11,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class RestServiceTest {
-
     private final String baseUrl = "http://localhost:8080";
     private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -84,205 +84,216 @@ public class RestServiceTest {
         Assertions.assertEquals("Could not find the movie with id=404", responseNode.get("error").asText());
     }
 
-    @Test
-    @Order(5)
-    @DisplayName("createMovie: успешное создание фильма при корректном аргументе movie")
-    public void createMovie_ValidParam_MovieCreated() throws IOException, InterruptedException {
-        Movie movie = new Movie("Back to the Future", 1985, "USA", 116);
+    @Nested
+    class AuthorizedTest {
+        private static final HttpRequest.Builder requestBuilder = HttpRequest.newBuilder();
 
-        String requestBody = objectMapper.writeValueAsString(movie);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/movies"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                .build();
-
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        int actualId = Integer.parseInt(response.body());
-
-        Assertions.assertTrue(actualId > 0);
-    }
-
-    @Test
-    @Order(6)
-    @DisplayName("createMovie: ошибка при отсутствии обязательных полей в параметре movie")
-    public void createMovie_NoRequiredFields_ErrorBadRequest() throws IOException, InterruptedException {
-        Movie movie = new Movie(null, 1985, null, 116);
-
-        String requestBody = objectMapper.writeValueAsString(movie);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/movies"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                .build();
-
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        JsonNode responseNode = objectMapper.readTree(response.body());
-
-        Assertions.assertEquals(400, responseNode.get("status").asInt());
-        Assertions.assertEquals("Bad Request", responseNode.get("error").asText());
-
-        for (JsonNode errorNode : responseNode.get("errorDetails")) {
-            System.out.println(errorNode.asText());
+        @BeforeAll
+        static void setupAuthorization() {
+            String credentialsBase64 = Base64.getEncoder().encodeToString("admin:admin".getBytes());
+            requestBuilder.header("Authorization", "Basic " + credentialsBase64);
         }
-    }
 
-    @Test
-    @Order(7)
-    @DisplayName("createMovie: ошибка при некорректных полях movie")
-    public void createMovie_InvalidFields_ErrorBadRequest() throws IOException, InterruptedException {
-        Movie movie = new Movie("  ", 200, "", 0);
+        @Test
+        @Order(5)
+        @DisplayName("createMovie: успешное создание фильма при корректном аргументе movie")
+        public void createMovie_ValidParam_MovieCreated() throws IOException, InterruptedException {
+            Movie movie = new Movie("Back to the Future", 1985, "USA", 116);
 
-        String requestBody = objectMapper.writeValueAsString(movie);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/movies"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                .build();
+            String requestBody = objectMapper.writeValueAsString(movie);
+            HttpRequest request = requestBuilder
+                    .uri(URI.create(baseUrl + "/movies"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        JsonNode responseNode = objectMapper.readTree(response.body());
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            int actualId = Integer.parseInt(response.body());
 
-        Assertions.assertEquals(400, responseNode.get("status").asInt());
-        Assertions.assertEquals("Bad Request", responseNode.get("error").asText());
-
-        for (JsonNode errorNode : responseNode.get("errorDetails")) {
-            System.out.println(errorNode.asText());
+            Assertions.assertTrue(actualId > 0);
         }
-    }
 
-    @Test
-    @Order(8)
-    @DisplayName("updateMovie: успешное обновление фильма при корректном аргументе movie")
-    public void updateMovie_ValidParam_MovieUpdated() throws IOException, InterruptedException {
-        int movieId = 10;
-        Movie movie = new Movie("New name", 2023, "Russia", 100);
+        @Test
+        @Order(6)
+        @DisplayName("createMovie: ошибка при отсутствии обязательных полей в параметре movie")
+        public void createMovie_NoRequiredFields_ErrorBadRequest() throws IOException, InterruptedException {
+            Movie movie = new Movie(null, 1985, null, 116);
 
-        String requestBody = objectMapper.writeValueAsString(movie);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/movies/" + movieId))
-                .header("Content-Type", "application/json")
-                .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
-                .build();
+            String requestBody = objectMapper.writeValueAsString(movie);
+            HttpRequest request = requestBuilder
+                    .uri(URI.create(baseUrl + "/movies"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode responseNode = objectMapper.readTree(response.body());
 
-        Assertions.assertEquals("OK", response.body());
+            Assertions.assertEquals(400, responseNode.get("status").asInt());
+            Assertions.assertEquals("Bad Request", responseNode.get("error").asText());
 
-        request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/movies/" + movieId))
-                .build();
-
-        response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        Movie actualMovie = objectMapper.readValue(response.body(), Movie.class);
-
-        Assertions.assertEquals(movie, actualMovie);
-    }
-
-    @Test
-    @Order(9)
-    @DisplayName("updateMovie: ошибка при отсутствии обязательных полей в параметре movie")
-    public void updateMovie_NoRequiredFields_ErrorBadRequest() throws IOException, InterruptedException {
-        int movieId = 10;
-        Movie movie = new Movie(null, 2023, null, 100);
-
-        String requestBody = objectMapper.writeValueAsString(movie);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/movies/" + movieId))
-                .header("Content-Type", "application/json")
-                .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
-                .build();
-
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        JsonNode responseNode = objectMapper.readTree(response.body());
-
-        Assertions.assertEquals(400, responseNode.get("status").asInt());
-        Assertions.assertEquals("Bad Request", responseNode.get("error").asText());
-
-        for (JsonNode errorNode : responseNode.get("errorDetails")) {
-            System.out.println(errorNode.asText());
+            for (JsonNode errorNode : responseNode.get("errorDetails")) {
+                System.out.println(errorNode.asText());
+            }
         }
-    }
 
-    @Test
-    @Order(10)
-    @DisplayName("updateMovie: ошибка при некорректных полях movie")
-    public void updateMovie_InvalidFields_ErrorBadRequest() throws IOException, InterruptedException {
-        int movieId = 10;
-        Movie movie = new Movie("  ", 200, "", 0);
+        @Test
+        @Order(7)
+        @DisplayName("createMovie: ошибка при некорректных полях movie")
+        public void createMovie_InvalidFields_ErrorBadRequest() throws IOException, InterruptedException {
+            Movie movie = new Movie("  ", 200, "", 0);
 
-        String requestBody = objectMapper.writeValueAsString(movie);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/movies/" + movieId))
-                .header("Content-Type", "application/json")
-                .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
-                .build();
+            String requestBody = objectMapper.writeValueAsString(movie);
+            HttpRequest request = requestBuilder
+                    .uri(URI.create(baseUrl + "/movies"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        JsonNode responseNode = objectMapper.readTree(response.body());
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode responseNode = objectMapper.readTree(response.body());
 
-        Assertions.assertEquals(400, responseNode.get("status").asInt());
-        Assertions.assertEquals("Bad Request", responseNode.get("error").asText());
+            Assertions.assertEquals(400, responseNode.get("status").asInt());
+            Assertions.assertEquals("Bad Request", responseNode.get("error").asText());
 
-        for (JsonNode errorNode : responseNode.get("errorDetails")) {
-            System.out.println(errorNode.asText());
+            for (JsonNode errorNode : responseNode.get("errorDetails")) {
+                System.out.println(errorNode.asText());
+            }
         }
-    }
 
-    @Test
-    @Order(11)
-    @DisplayName("updateMovie: ошибка при некорректном ID")
-    public void updateMovie_NotExistingId_ErrorNotFound() throws IOException, InterruptedException {
-        int movieId = 404;
-        Movie movie = new Movie("New name", 2023, "Russia", 100);
+        @Test
+        @Order(8)
+        @DisplayName("updateMovie: успешное обновление фильма при корректном аргументе movie")
+        public void updateMovie_ValidParam_MovieUpdated() throws IOException, InterruptedException {
+            int movieId = 10;
+            Movie movie = new Movie("New name", 2023, "Russia", 100);
 
-        String requestBody = objectMapper.writeValueAsString(movie);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/movies/" + movieId))
-                .header("Content-Type", "application/json")
-                .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
-                .build();
+            String requestBody = objectMapper.writeValueAsString(movie);
+            HttpRequest request = requestBuilder
+                    .uri(URI.create(baseUrl + "/movies/" + movieId))
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        JsonNode responseNode = objectMapper.readTree(response.body());
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        Assertions.assertEquals(404, responseNode.get("status").asInt());
-        Assertions.assertEquals("Could not find the movie with id=404", responseNode.get("error").asText());
-    }
+            Assertions.assertEquals("OK", response.body());
 
-    @Test
-    @Order(12)
-    @DisplayName("deleteMovie: успешное удаление фильма")
-    public void deleteMovie_ValidId_ErrorBadRequest() throws IOException, InterruptedException {
-        int movieId = 10;
+            request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/movies/" + movieId))
+                    .build();
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/movies/" + movieId))
-                .header("Content-Type", "application/json")
-                .DELETE()
-                .build();
+            response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            Movie actualMovie = objectMapper.readValue(response.body(), Movie.class);
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            Assertions.assertEquals(movie, actualMovie);
+        }
 
-        Assertions.assertEquals("OK", response.body());
-    }
+        @Test
+        @Order(9)
+        @DisplayName("updateMovie: ошибка при отсутствии обязательных полей в параметре movie")
+        public void updateMovie_NoRequiredFields_ErrorBadRequest() throws IOException, InterruptedException {
+            int movieId = 10;
+            Movie movie = new Movie(null, 2023, null, 100);
 
-    @Test
-    @Order(13)
-    @DisplayName("deleteMovie: ошибка при некорректном ID")
-    public void deleteMovie_NotExistingId_ErrorNotFound() throws IOException, InterruptedException {
-        int movieId = 404;
+            String requestBody = objectMapper.writeValueAsString(movie);
+            HttpRequest request = requestBuilder
+                    .uri(URI.create(baseUrl + "/movies/" + movieId))
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/movies/" + movieId))
-                .header("Content-Type", "application/json")
-                .DELETE()
-                .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode responseNode = objectMapper.readTree(response.body());
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        JsonNode responseNode = objectMapper.readTree(response.body());
+            Assertions.assertEquals(400, responseNode.get("status").asInt());
+            Assertions.assertEquals("Bad Request", responseNode.get("error").asText());
 
-        Assertions.assertEquals(404, responseNode.get("status").asInt());
-        Assertions.assertEquals("Could not find the movie with id=404", responseNode.get("error").asText());
+            for (JsonNode errorNode : responseNode.get("errorDetails")) {
+                System.out.println(errorNode.asText());
+            }
+        }
+
+        @Test
+        @Order(10)
+        @DisplayName("updateMovie: ошибка при некорректных полях movie")
+        public void updateMovie_InvalidFields_ErrorBadRequest() throws IOException, InterruptedException {
+            int movieId = 10;
+            Movie movie = new Movie("  ", 200, "", 0);
+
+            String requestBody = objectMapper.writeValueAsString(movie);
+            HttpRequest request = requestBuilder
+                    .uri(URI.create(baseUrl + "/movies/" + movieId))
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode responseNode = objectMapper.readTree(response.body());
+
+            Assertions.assertEquals(400, responseNode.get("status").asInt());
+            Assertions.assertEquals("Bad Request", responseNode.get("error").asText());
+
+            for (JsonNode errorNode : responseNode.get("errorDetails")) {
+                System.out.println(errorNode.asText());
+            }
+        }
+
+        @Test
+        @Order(11)
+        @DisplayName("updateMovie: ошибка при некорректном ID")
+        public void updateMovie_NotExistingId_ErrorNotFound() throws IOException, InterruptedException {
+            int movieId = 404;
+            Movie movie = new Movie("New name", 2023, "Russia", 100);
+
+            String requestBody = objectMapper.writeValueAsString(movie);
+            HttpRequest request = requestBuilder
+                    .uri(URI.create(baseUrl + "/movies/" + movieId))
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode responseNode = objectMapper.readTree(response.body());
+
+            Assertions.assertEquals(404, responseNode.get("status").asInt());
+            Assertions.assertEquals("Could not find the movie with id=404", responseNode.get("error").asText());
+        }
+
+        @Test
+        @Order(12)
+        @DisplayName("deleteMovie: успешное удаление фильма")
+        public void deleteMovie_ValidId_ErrorBadRequest() throws IOException, InterruptedException {
+            int movieId = 10;
+
+            HttpRequest request = requestBuilder
+                    .uri(URI.create(baseUrl + "/movies/" + movieId))
+                    .header("Content-Type", "application/json")
+                    .DELETE()
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            Assertions.assertEquals("OK", response.body());
+        }
+
+        @Test
+        @Order(13)
+        @DisplayName("deleteMovie: ошибка при некорректном ID")
+        public void deleteMovie_NotExistingId_ErrorNotFound() throws IOException, InterruptedException {
+            int movieId = 404;
+
+            HttpRequest request = requestBuilder
+                    .uri(URI.create(baseUrl + "/movies/" + movieId))
+                    .header("Content-Type", "application/json")
+                    .DELETE()
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode responseNode = objectMapper.readTree(response.body());
+
+            Assertions.assertEquals(404, responseNode.get("status").asInt());
+            Assertions.assertEquals("Could not find the movie with id=404", responseNode.get("error").asText());
+        }
     }
 }
